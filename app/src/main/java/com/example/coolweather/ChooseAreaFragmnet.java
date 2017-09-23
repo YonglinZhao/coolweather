@@ -75,7 +75,7 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
         titleText = (TextView) view.findViewById(R.id.title_text);
         backButton = (Button) view.findViewById(R.id.back_button);
         listView = (ListView) view.findViewById(R.id.list_view);
-        adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, dataList);
+        adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, dataList);//初始化ArrayAdapter
         listView.setAdapter(adapter);
         return view;
     }
@@ -86,8 +86,9 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //如果选择省进入市，选择市进入县
                 if (currentLevel == LEVEL_PROVINCE) {
-                    selectedProvince = provinceList.get(position);
+                    selectedProvince = provinceList.get(position);//选择省
                     queryCities();
                 } else if (currentLevel == LEVEL_CITY) {
                     selectedCity = cityList.get(position);
@@ -95,6 +96,7 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
                 }
             }
         });
+        //监听返回按钮,第一层从县返回市，从市返回省。
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -113,8 +115,9 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
      */
     private void queryProvinces() {
         titleText.setText("中国");
-        backButton.setVisibility(View.GONE);
-        provinceList = DataSupport.findAll(Province.class);
+        backButton.setVisibility(View.GONE);//隐藏返回按钮
+        provinceList = DataSupport.findAll(Province.class);//调用LitePal查询读取省级的数据
+        //如果读取数据成功则显示在界面上，否则调用服务器上的数据
         if (provinceList.size() > 0) {
             dataList.clear();
             for (Province province : provinceList) {
@@ -138,13 +141,12 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
         cityList = DataSupport.where("provinceid = ?", String.valueOf(selectedProvince.getId())).find(City.class);
         if (cityList.size() > 0) {
             dataList.clear();
-            for (City city : cityList
-                    ) {
+            for (City city : cityList) {
                 dataList.add(city.getCityName());
             }
-            adapter.notifyDataSetChanged();
+            adapter.notifyDataSetChanged();//刷新数据
             listView.setSelection(0);
-            currentLevel = LEVEL_COUNTY;
+            currentLevel = LEVEL_CITY;
         } else {
             int provinceCode = selectedProvince.getProvinceCode();
             String address = "http://guolin.tech/api/china" + provinceCode;
@@ -168,12 +170,12 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
             }
             adapter.notifyDataSetChanged();
             listView.setSelection(0);
-            currentLevel = LEVEL_CITY;
+            currentLevel = LEVEL_COUNTY;
         } else {
             int provinceCode = selectedProvince.getProvinceCode();
             int cityCode = selectedCity.getCityCode();
-            String address = "http://guolin.tech/api/china" + provinceCode + "/" + cityCode;
-            queryFromServer(address, "county");
+            String address = "http://guolin.tech/api/china"+ provinceCode +"/"+cityCode;
+            queryFromServer(address,"county");
         }
     }
 
@@ -185,6 +187,7 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
      */
     private void queryFromServer(String address, final String type) {
         showProgressDialog();
+        //向服务器发送请求
         HttpUtil.sendOkHttpRequest(address, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -198,11 +201,13 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
                 });
             }
 
+            //响应的数据会调回到onResponse
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String responseText = response.body().string();
                 boolean result = false;
                 if ("province".equals(type)) {
+                    //handleProvinceResponse解析和处理服务器返回的数据，并存到数据库。
                     result = Utility.handleProvinceResponse(responseText);
                 } else if ("city".equals(type)) {
                     result = Utility.handleCityResponse(responseText, selectedProvince.getId());
@@ -210,7 +215,7 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
                     result = Utility.handleCountyResponse(responseText, selectedCity.getId());
                 }
                 if (result) {
-                    getActivity().runOnUiThread(new Runnable() {
+                    getActivity().runOnUiThread(new Runnable() {//从子线程切换到主线程
                         @Override
                         public void run() {
                             closeProgressDialog();
@@ -218,11 +223,9 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
                                 queryProvinces();
                             } else if ("city".equals(type)) {
                                 queryCities();
-                            }else if ("county".equals(type)){
+                            } else if ("county".equals(type)) {
                                 queryCounties();
                             }
-
-
                         }
                     });
                 }
@@ -230,6 +233,7 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
         });
 
     }
+
     /**
      * 显示对话框
      */
