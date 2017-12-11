@@ -1,8 +1,11 @@
 package com.example.coolweather;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,10 +32,7 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
 
-/**
- * Created by 赵泳霖 on 2017/9/20.
- */
-public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
+public class ChooseAreaFragment extends android.support.v4.app.Fragment {
     private static final int LEVEL_PROVINCE = 0;
     private static final int LEVEL_CITY = 1;
     private static final int LEVEL_COUNTY = 2;
@@ -70,7 +70,7 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater,  ViewGroup container,  Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.choose_area, container, false);
         titleText = (TextView) view.findViewById(R.id.title_text);
         backButton = (Button) view.findViewById(R.id.back_button);
@@ -81,7 +81,7 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
     }
 
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+    public void onActivityCreated( Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -93,6 +93,12 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
                 } else if (currentLevel == LEVEL_CITY) {
                     selectedCity = cityList.get(position);
                     queryCounties();
+                } else if (currentLevel == LEVEL_COUNTY) {
+                    String weatherId = countyList.get(position).getWeatherId();
+                    Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                    intent.putExtra("weather_id", weatherId);
+                    startActivity(intent);
+                    getActivity().finish();
                 }
             }
         });
@@ -136,7 +142,7 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
      * 查询选中省内所有的市，优先从数据库查询，如果没有查询到再去服务器上查询
      */
     private void queryCities() {
-        titleText.setText(selectedProvince.getProvinceName());
+        titleText.setText(selectedProvince.getProvinceName());//设置为你选中的省
         backButton.setVisibility(View.VISIBLE);
         cityList = DataSupport.where("provinceid = ?", String.valueOf(selectedProvince.getId())).find(City.class);
         if (cityList.size() > 0) {
@@ -149,7 +155,7 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
             currentLevel = LEVEL_CITY;
         } else {
             int provinceCode = selectedProvince.getProvinceCode();
-            String address = "http://guolin.tech/api/china" + provinceCode;
+            String address = "http://guolin.tech/api/china/" + provinceCode;
             queryFromServer(address, "city");
         }
     }
@@ -174,7 +180,7 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
         } else {
             int provinceCode = selectedProvince.getProvinceCode();
             int cityCode = selectedCity.getCityCode();
-            String address = "http://guolin.tech/api/china"+ provinceCode +"/"+cityCode;
+            String address = "http://guolin.tech/api/china/"+ provinceCode +"/"+cityCode;
             queryFromServer(address,"county");
         }
     }
@@ -193,6 +199,7 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
             public void onFailure(Call call, IOException e) {
                 //通过runOnUiThread()方法回到主线程处理逻辑
                 getActivity().runOnUiThread(new Runnable() {
+                    @RequiresApi(api = Build.VERSION_CODES.M)
                     @Override
                     public void run() {
                         closeProgressDialog();
@@ -255,4 +262,3 @@ public class ChooseAreaFragmnet extends android.support.v4.app.Fragment {
         }
     }
 }
-

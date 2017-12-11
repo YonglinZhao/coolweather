@@ -4,6 +4,7 @@ import org.litepal.crud.DataSupport;
 
 /**
  * Created by 赵泳霖 on 2017/9/19.
+ * 省的实体类
  */
 
 public class  Province extends DataSupport {
