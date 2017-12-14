@@ -59,6 +59,7 @@ public class WeatherActivity extends AppCompatActivity {
 
         initView();//初始化控件
         initDate();
+
     }
     //初始化控件
     private void initView() {
